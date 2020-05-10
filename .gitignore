@@ -1,0 +1,11 @@
+.venv
+ffmpeg
+google-music-oauth
+radigo
+skicka
+skicka.config
+skicka.tokencache.json
+*.zip
+events
+.DS_Store
+*.pyc
