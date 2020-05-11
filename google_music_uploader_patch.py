@@ -1,5 +1,6 @@
 import logging
 import os
+import glob
 from google_music_manager_uploader.uploader_daemon import (
     Musicmanager, MusicToUpload, DeduplicateApi, Observer, upload_file)
 
