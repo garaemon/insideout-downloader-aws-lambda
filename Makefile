@@ -5,7 +5,7 @@ INSIDEOUT_S3_KEY=${ZIP_FILE}
 
 all: ${ZIP_FILE}
 
-${ZIP_FILE}: ffmpeg lambda_function.py google_music_uploader_patch.py skicka skicka.config requirements.txt google-music-oauth skicka.tokencache.json
+${ZIP_FILE}: ffmpeg lambda_function.py skicka skicka.config requirements.txt skicka.tokencache.json ytmusic_headers_auth.json
 	rm -f $@
 	(virtualenv .venv && . .venv/bin/activate && pip install --target ./package -r requirements.txt)
 	(cd package && zip -r9 ../$@ . --exclude=*.git* --exclude=*.pyc)

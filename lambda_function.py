@@ -15,7 +15,7 @@ if not 'HOME' in os.environ:
     os.environ['HOME'] = '/tmp'
 
 from slack_webhook import Slack
-from google_music_uploader_patch import upload
+from ytmusicapi import YTMusic
 import urllib.request
 import arrow
 import mutagen
@@ -67,13 +67,9 @@ def download():
     return output_filename
 
 
-def upload_to_google_play_music(mp3file):
-    shutil.copyfile('google-music-oauth', '/tmp/google-music-oauth')
-    os.chmod('/tmp/google-music-oauth', stat.S_IREAD | stat.S_IWRITE)
-    upload(oauth='/tmp/google-music-oauth',
-           oneshot=True,
-           uploader_id=os.environ['MAC_ADDRESS'].upper(),
-           directory=os.path.dirname(mp3file))
+def upload_to_youtube_music(mp3file):
+    ytmusic = YTMusic('ytmusic_headers_auth.json')
+    ytmusic.upload_song(mp3file)
 
 
 def upload_to_google_drive(filename, upload_directory):
@@ -107,7 +103,7 @@ def lambda_handler(event, context):
         mp3file_name = download()
         upload_to_google_drive(mp3file_name,
                                os.environ['UPLOAD_GOOGLE_DRIVE_DIRECTORY'])
-        upload_to_google_play_music(mp3file_name)
+        upload_to_youtube_music(mp3file_name)
         slack.post(text='[insideout] :tada: done recording insideout')
     except Exception as e:
         slack.post(text='[insideout] :red_circle: failed to record insideout')

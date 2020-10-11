@@ -9,3 +9,5 @@ skicka.tokencache.json
 events
 .DS_Store
 *.pyc
+
+ytmusic_headers_auth.json
