@@ -20,6 +20,7 @@ import urllib.request
 import arrow
 import mutagen
 from mutagen.easyid3 import EasyID3
+import boto3
 # yapf: enable
 
 INSIDEOUT_URL = 'https://newapi.block.fm/user/v1/radios/8'
@@ -93,6 +94,17 @@ def upload_to_google_drive(filename, upload_directory):
     ])
 
 
+def upload_to_s3(filename, upload_directory):
+    bucket = os.environ['S3_BUCKET']
+    s3 = boto3.resource('s3')
+    bucket_client = s3.Bucket(bucket)
+    target_path = os.path.join(upload_directory, os.path.basename(filename))
+    print('filename', filename)
+    print('upload_directory', upload_directory)
+    print('target', target_path)
+    bucket_client.upload_file(filename,  target_path)
+
+
 def lambda_handler(event, context):
     print('add current working directory to PATH')
     slack = Slack(url=os.environ['SLACK_WEBHOOK_URL'])
@@ -101,6 +113,8 @@ def lambda_handler(event, context):
             os.path.dirname(os.path.abspath(__file__)), 'bin')
     try:
         mp3file_name = download()
+        upload_to_s3(mp3file_name,
+                     os.environ['UPLOAD_GOOGLE_DRIVE_DIRECTORY'])
         upload_to_google_drive(mp3file_name,
                                os.environ['UPLOAD_GOOGLE_DRIVE_DIRECTORY'])
         upload_to_youtube_music(mp3file_name)
