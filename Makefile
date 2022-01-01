@@ -1,6 +1,6 @@
 FFMPEG_URL=https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
 ZIP_FILE=insideout_downloader.zip
-# INSIDEOUT_S3_BUCKET=
+INSIDEOUT_S3_BUCKET=
 INSIDEOUT_S3_KEY=${ZIP_FILE}
 
 all: ${ZIP_FILE}
@@ -15,7 +15,7 @@ ${ZIP_FILE}: ffmpeg lambda_function.py skicka skicka.config requirements.txt ski
 ffmpeg:
 	wget ${FFMPEG_URL} -O /tmp/ffmpeg.tar.xz
 	(cd /tmp && tar xvf /tmp/ffmpeg.tar.xz)
-	cp /tmp/ffmpeg-4.2.2-amd64-static/ffmpeg .
+	cp /tmp/ffmpeg-4.4.1-amd64-static/ffmpeg .
 
 
 skicka:

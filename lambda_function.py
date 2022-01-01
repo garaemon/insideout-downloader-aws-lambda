@@ -21,52 +21,49 @@ import arrow
 import mutagen
 from mutagen.easyid3 import EasyID3
 import boto3
+from bs4 import BeautifulSoup
 # yapf: enable
 
-INSIDEOUT_URL = 'https://newapi.block.fm/user/v1/radios/8'
+INSIDEOUT_URL = 'https://block.fm/radio/insideout'
 
-def download():
-    today = arrow.now()
+def download(this_week=True):
     response = urllib.request.urlopen(INSIDEOUT_URL)
     data = response.read()
-    json_data = json.loads(data.decode('utf-8'))
-    sound_source_array = json_data['data']['radio']['radios_has_sound_sources']
-    all_started_at_str = []
-    target_sound_source = None
-    for sound_source in sound_source_array:
-        started_at_str = sound_source['sound_source']['start_at']
-        all_started_at_str.append(started_at_str)
-        started_at = arrow.get(started_at_str).replace(tzinfo='Asia/Tokyo')
-        print(today - started_at)
-        diff = today - started_at
-        # diff should be positive because sound_source can have future date.
-        if diff < timedelta(days=7) and diff > timedelta(days=0):
-            target_sound_source = sound_source
-            break
-    if target_sound_source is None:
-        raise Exception(
-            'Cannot find archive of thisweek. candidate was {}'.format(
-                ', '.join(all_started_at_str)))
-    mp3_url = target_sound_source['sound_source']['sound_file']['url']
-    started_at_str = target_sound_source['sound_source']['start_at']
-    started_at = arrow.get(started_at_str).replace(tzinfo='Asia/Tokyo')
-    title = '{0:04d}{1:02d}{2:02d}-insideout'.format(started_at.year,
-                                                     started_at.month,
-                                                     started_at.day)
-    output_filename = os.path.join('/tmp', title + '.mp3')
-    print('Downloading mp3 file from {}'.format(mp3_url))
-    urllib.request.urlretrieve(mp3_url, output_filename)
-    try:
-        tags = EasyID3(output_filename)
-    except mutagen.id3.ID3NoHeaderError:
-        tags = mutagen.File(output_filename, easy=True)
-        tags.add_tags()
-    tags['title'] = title
-    tags['artist'] = '渡辺志保 & DJ YANATAKE'
-    tags['album'] = 'insideout'
-    tags.save()
-    return output_filename
+    soup = BeautifulSoup(data, "html.parser")
+    next_data = soup.find(id="__NEXT_DATA__")
+    json_data = json.loads(next_data.text)
+    episodes = json_data["props"]["pageProps"]["episodes"]["edges"]
+    for e in episodes:
+        episode_info = e["node"]["acfEpisode"]
+        date_str = episode_info["dateStart"]
+        started_at = arrow.get(date_str).replace(tzinfo='Asia/Tokyo')
+        mp3_url = episode_info["archiveUrl"]
+        if not mp3_url:
+            continue
+        if this_week:
+            today = arrow.now()
+            diff = today - started_at
+            # diff should be positive because sound_source can have future date.
+            if diff >= timedelta(days=7) and diff < timedelta(days=0):
+                continue
 
+        title = '{0:04d}{1:02d}{2:02d}-insideout'.format(started_at.year,
+                                                         started_at.month,
+                                                         started_at.day)
+        output_filename = os.path.join('/tmp', title + '.mp3')
+        print('Downloading mp3 file from {}'.format(mp3_url))
+        urllib.request.urlretrieve(mp3_url, output_filename)
+        try:
+            tags = EasyID3(output_filename)
+        except mutagen.id3.ID3NoHeaderError:
+            tags = mutagen.File(output_filename, easy=True)
+            tags.add_tags()
+        tags['title'] = title
+        tags['artist'] = '渡辺志保 & DJ YANATAKE'
+        tags['album'] = 'insideout {0:04d}'.format(started_at.year)
+        tags['tracknumber'] = str(started_at.week)
+        tags.save()
+    return output_filename
 
 def upload_to_youtube_music(mp3file):
     ytmusic = YTMusic('ytmusic_headers_auth.json')
@@ -130,3 +127,7 @@ def lambda_handler(event, context):
         'headers': {},
         'body': '{"message": "Hello from AWS Lambda"}'
     }
+
+
+if __name__ == '__main__':
+    download(this_week=False)
