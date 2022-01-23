@@ -36,6 +36,7 @@ def download(this_week=True):
     for e in episodes:
         episode_info = e["node"]["acfEpisode"]
         date_str = episode_info["dateStart"]
+        print('date_str', date_str)
         started_at = arrow.get(date_str).replace(tzinfo='Asia/Tokyo')
         mp3_url = episode_info["archiveUrl"]
         if not mp3_url:
@@ -43,9 +44,13 @@ def download(this_week=True):
         if this_week:
             today = arrow.now()
             diff = today - started_at
+            print(diff)
             # diff should be positive because sound_source can have future date.
-            if diff >= timedelta(days=7) and diff < timedelta(days=0):
+            if diff >= timedelta(days=7) or diff < timedelta(days=0):
+                print('Skipping entory for', date_str)
                 continue
+            else:
+                print('Downloading entory for', date_str)
 
         title = '{0:04d}{1:02d}{2:02d}-insideout'.format(started_at.year,
                                                          started_at.month,
@@ -109,7 +114,7 @@ def lambda_handler(event, context):
         os.path.abspath(__file__)) + ':' + os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'bin')
     try:
-        mp3file_name = download()
+        mp3file_name = download(this_week=True)
         upload_to_s3(mp3file_name,
                      os.environ['UPLOAD_GOOGLE_DRIVE_DIRECTORY'])
         upload_to_google_drive(mp3file_name,
