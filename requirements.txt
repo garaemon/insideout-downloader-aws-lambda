@@ -31,7 +31,7 @@ pickleshare==0.7.5
 platformdirs==2.3.0
 pluggy==1.0.0
 prompt-toolkit==3.0.19
-protobuf==3.17.3
+protobuf==3.18.3
 ptyprocess==0.7.0
 pycodestyle==2.6.0
 pydocstyle==6.1.1
